@@ -60,7 +60,7 @@ def compute_build_signature(env):
     # Check if we can skip processing
     hashes = ''
     for header in files_to_keep:
-        hashes += get_file_sha256sum(header)[0:10]
+        hashes += get_file_sha256sum(header)[:10]
 
     marlin_json = build_path / 'marlin_config.json'
     marlin_zip = build_path / 'mc.zip'
@@ -101,7 +101,7 @@ def compute_build_signature(env):
         key, value = key_val[0], ' '.join(key_val[1:])
 
         # Ignore values starting with two underscore, since it's low level
-        if len(key) > 2 and key[0:2] == "__" :
+        if len(key) > 2 and key[:2] == "__":
             continue
         # Ignore values containing a parenthesis (likely a function macro)
         if '(' in key and ')' in key:
@@ -116,7 +116,10 @@ def compute_build_signature(env):
     #
     # Continue to gather data for CONFIGURATION_EMBEDDING or CONFIG_EXPORT
     #
-    if not ('CONFIGURATION_EMBEDDING' in defines or 'CONFIG_EXPORT' in defines):
+    if (
+        'CONFIGURATION_EMBEDDING' not in defines
+        and 'CONFIG_EXPORT' not in defines
+    ):
         return
 
     # Second step is to filter useless macro
@@ -193,7 +196,7 @@ def compute_build_signature(env):
                 for key in sorted(data[header]):
                     if key not in ignore:
                         val = 'on' if data[header][key] == '' else data[header][key]
-                        outfile.write(ini_fmt.format(key.lower(), ' = ' + val))
+                        outfile.write(ini_fmt.format(key.lower(), f' = {val}'))
 
     #
     # Produce a schema.json file if CONFIG_EXPORT == 3
@@ -202,7 +205,7 @@ def compute_build_signature(env):
         try:
             conf_schema = schema.extract()
         except Exception as exc:
-            print("Error: " + str(exc))
+            print(f"Error: {str(exc)}")
             conf_schema = None
 
         if conf_schema:
@@ -251,7 +254,7 @@ def compute_build_signature(env):
     #
     # The rest only applies to CONFIGURATION_EMBEDDING
     #
-    if not 'CONFIGURATION_EMBEDDING' in defines:
+    if 'CONFIGURATION_EMBEDDING' not in defines:
         return
 
     # Compress the JSON file as much as we can

@@ -63,7 +63,7 @@ def apply_opt(name, val, conf=None):
 
         # Add the provided value after the name
         if val != "on" and val != "" and val is not None:
-            added += " " + val
+            added += f" {val}"
 
         # Prepend the new option after the first set of #define lines
         fullpath = config_path("Configuration.h")
@@ -173,10 +173,10 @@ def apply_config_ini(cp):
         if ikey == 'ini_use_config':
             config_keys = map(str.strip, ival.split(','))
 
+    addbase = False
+
     # For each ini_use_config item perform an action
     for ckey in config_keys:
-        addbase = False
-
         # For a key ending in .ini load and parse another .ini file
         if ckey.endswith('.ini'):
             sect = 'base'
@@ -186,9 +186,8 @@ def apply_config_ini(cp):
             apply_sections(cp2, sect)
             ckey = 'base';
 
-        # (Allow 'example/' as a shortcut for 'examples/')
         elif ckey.startswith('example/'):
-            ckey = 'examples' + ckey[7:]
+            ckey = f'examples{ckey[7:]}'
 
         # For 'examples/<path>' fetch an example set from GitHub.
         # For https?:// do a direct fetch of the URL.
@@ -201,7 +200,7 @@ def apply_config_ini(cp):
 
         else:
             # Apply keyed sections after external files are done
-            apply_sections(cp, 'config:' + ckey)
+            apply_sections(cp, f'config:{ckey}')
 
 if __name__ == "__main__":
     #
@@ -213,7 +212,7 @@ if __name__ == "__main__":
         if args[0].endswith('.ini'):
             ini_file = args[0]
         else:
-            print("Usage: %s <.ini file>" % sys.argv[0])
+            print(f"Usage: {sys.argv[0]} <.ini file>")
     else:
         ini_file = config_path('config.ini')
 

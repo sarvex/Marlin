@@ -9,7 +9,7 @@ import re,json
 from pathlib import Path
 
 def extend_dict(d:dict, k:tuple):
-    if len(k) >= 1 and k[0] not in d:
+    if k and k[0] not in d:
         d[k[0]] = {}
     if len(k) >= 2 and k[1] not in d[k[0]]:
         d[k[0]][k[1]] = {}
@@ -49,7 +49,7 @@ def group_options(schema):
                 for optkey in s:
                     find_grouping(found_groups, filekey, sectkey, optkey, pindex)
 
-        fkeys = [ k for k in found_groups.keys() ]
+        fkeys = list(found_groups.keys())
         for kkey in fkeys:
             items = found_groups[kkey]
             if len(items) > 1:
@@ -80,7 +80,6 @@ def extract():
     # Load board names from boards.h
     boards = load_boards()
 
-    # Parsing states
     class Parse:
         NORMAL          = 0 # No condition yet
         BLOCK_COMMENT   = 1 # Looking for the end of the block comment
@@ -195,7 +194,6 @@ def extract():
 
                         options_json, section = use_comment(cline, options_json, section, comment_buff)
 
-                # For the normal state we're looking for any non-blank line
                 elif state == Parse.NORMAL:
                     # Skip a commented define when evaluating comment opening
                     st = 2 if re.match(r'^//\s*#define', line) else 0
@@ -258,14 +256,14 @@ def extract():
                     cparts = line.split()
                     iselif, iselse = cparts[0] == '#elif', cparts[0] == '#else'
                     if iselif or iselse or cparts[0] == '#endif':
-                        if len(conditions) == 0:
+                        if not conditions:
                             raise Exception(f'no #if block at line {line_number}')
 
                         # Pop the last condition-array from the stack
                         prev = conditions.pop()
 
                         if iselif or iselse:
-                            prev[-1] = '!' + prev[-1] # Invert the last condition
+                            prev[-1] = f'!{prev[-1]}'
                             if iselif: prev.append(atomize(line[5:].strip()))
                             conditions.append(prev)
 
@@ -276,11 +274,10 @@ def extract():
                     elif cparts[0] == '#ifndef':
                         conditions.append([ f'!defined({line[7:].strip()})' ])
 
-                    # Handle a complete #define line
                     elif defmatch != None:
 
                         # Get the match groups into vars
-                        enabled, define_name, val = defmatch[1] == None, defmatch[3], defmatch[4]
+                        enabled, define_name, val = defmatch[1] is None, defmatch[3], defmatch[4]
 
                         # Increment the serial ID
                         sid += 1
@@ -338,7 +335,7 @@ def extract():
                             units = re.match(r'^\(([^)]+)\)', full_comment)
                             if units:
                                 units = units[1]
-                                if units == 's' or units == 'sec': units = 'seconds'
+                                if units in ['s', 'sec']: units = 'seconds'
                                 define_info['units'] = units
 
                         # Set the options for the current #define
@@ -378,18 +375,14 @@ def main():
     try:
         schema = extract()
     except Exception as exc:
-        print("Error: " + str(exc))
+        print(f"Error: {str(exc)}")
         schema = None
 
     if schema:
 
         # Get the first command line argument
         import sys
-        if len(sys.argv) > 1:
-            arg = sys.argv[1]
-        else:
-            arg = 'some'
-
+        arg = sys.argv[1] if len(sys.argv) > 1 else 'some'
         # JSON schema
         if arg in ['some', 'json', 'jsons']:
             print("Generating JSON ...")

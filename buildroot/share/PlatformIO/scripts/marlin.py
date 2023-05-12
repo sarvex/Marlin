@@ -34,7 +34,7 @@ def custom_ld_script(ldname):
     apath = str(Path("buildroot/share/PlatformIO/ldscripts", ldname).resolve())
     for i, flag in enumerate(env["LINKFLAGS"]):
         if "-Wl,-T" in flag:
-            env["LINKFLAGS"][i] = "-Wl,-T" + apath
+            env["LINKFLAGS"][i] = f"-Wl,-T{apath}"
         elif flag == "-T":
             env["LINKFLAGS"][i + 1] = apath
 
